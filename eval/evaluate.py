@@ -41,19 +41,40 @@ def _ndcg_at_k(ranked: List[str], relevant: List[str], k: int) -> float:
     return dcg / ideal if ideal else 0.0
 
 
+def _precision_at_k(ranked: List[str], relevant: List[str], k: int) -> float:
+    topk = ranked[:k]
+    if not topk:
+        return 0.0
+    return sum(1 for d in topk if d in relevant) / len(topk)
+
+
 def evaluate(engine: SearchEngine, testset: List[Dict], k: int = 3, rerank: bool = True) -> Dict:
-    recalls, mrrs, ndcgs = [], [], []
+    recalls, precs, mrrs, ndcgs = [], [], [], []
     for case in testset:
         ranked = engine.ranked_doc_ids(case["query"], top_n=10, top_k=k, rerank=rerank)
         recalls.append(_recall_at_k(ranked, case["relevant"], k))
+        precs.append(_precision_at_k(ranked, case["relevant"], k))
         mrrs.append(_mrr(ranked, case["relevant"]))
         ndcgs.append(_ndcg_at_k(ranked, case["relevant"], k))
     n = len(testset) or 1
     return {
         f"recall@{k}": round(sum(recalls) / n, 4),
+        f"precision@{k}": round(sum(precs) / n, 4),
         "MRR": round(sum(mrrs) / n, 4),
         f"nDCG@{k}": round(sum(ndcgs) / n, 4),
     }
+
+
+def per_query_breakdown(engine: SearchEngine, testset: List[Dict], k: int = 3,
+                        rerank: bool = True) -> List[Dict]:
+    """クエリ別の内訳(どのクエリでリランクが効いたか可視化)."""
+    rows = []
+    for case in testset:
+        ranked = engine.ranked_doc_ids(case["query"], top_n=10, top_k=k, rerank=rerank)
+        rows.append({"query": case["query"], "ranked": ranked,
+                     "mrr": round(_mrr(ranked, case["relevant"]), 3),
+                     "recall": round(_recall_at_k(ranked, case["relevant"], k), 3)})
+    return rows
 
 
 def run() -> Dict:
