@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文脈類似検索(スタンドアロン)</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body{font-family:system-ui,sans-serif;background:#f7f8fa;margin:0;padding:24px;color:#1a1a2e}
+    .wrap{max-width:760px;margin:0 auto} h1{color:#5a3fb8;font-size:22px}
+    .card{background:#fff;border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    table{border-collapse:collapse;width:100%} th,td{border:1px solid #dde;padding:6px 8px} th{background:#efeafb}
+    .reasons{color:#5a3fb8;font-size:13px} .snippet{color:#667;font-size:13px}
+    nav button{margin-right:8px} li{margin:8px 0}
+  </style>
+</head>
+<body><div id="root"></div>
+<script type="text/babel" data-presets="react">
+  const RESULTS=[{doc_id:"saas",rerank_score:0.31,reasons:["同義概念で一致(キャンセル→解約)"],snippet:"…30日前の通知で解約…"},
+    {doc_id:"gyoumu",rerank_score:0.28,reasons:["同義概念で一致(中途解約)"],snippet:"…1ヶ月前の予告で中途解約…"}];
+  const EVAL={vector_only:{"recall@3":1.0,"precision@3":0.47,MRR:0.9,"nDCG@3":0.939},
+    with_rerank:{"recall@3":1.0,"precision@3":0.53,MRR:1.0,"nDCG@3":0.984}};
+  function App(){
+    const [tab,setTab]=React.useState("search");
+    return (<div className="wrap"><h1>文脈類似ドキュメント検索 <small style={{fontSize:12,color:"#889"}}>(デモ)</small></h1>
+      <nav><button onClick={()=>setTab("search")} disabled={tab==="search"}>検索</button>
+        <button onClick={()=>setTab("eval")} disabled={tab==="eval"}>精度評価</button></nav>
+      {tab==="search"?(<div className="card"><h2>文脈類似検索</h2>
+        <input style={{width:"100%"}} defaultValue="契約をキャンセルしたい"/>
+        <ul>{RESULTS.map((r,i)=>(<li key={i}><b>{r.doc_id}</b>（score {r.rerank_score}）
+          <div className="reasons">{r.reasons.join(" / ")}</div><div className="snippet">{r.snippet}</div></li>))}</ul>
+      </div>):(<div className="card"><h2>精度評価(vector-only vs +rerank)</h2>
+        <table><tr><th>パイプライン</th><th>recall@3</th><th>precision@3</th><th>MRR</th><th>nDCG@3</th></tr>
+          {Object.entries(EVAL).map(([n,m])=>(<tr key={n}><td>{n}</td><td>{m["recall@3"]}</td>
+            <td>{m["precision@3"]}</td><td>{m.MRR}</td><td>{m["nDCG@3"]}</td></tr>))}</table></div>)}</div>);
+  }
+  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body></html>
