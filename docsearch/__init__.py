@@ -4,6 +4,8 @@ from .vectorstore import VectorStore, ScoredChunk
 from .reranker import Reranker, RerankedChunk
 from .explain import explain
 from .search import SearchEngine
+from .counterfactual import explain_counterfactual, explain_ranking, Counterfactual
+from .reranker import _query_terms
 
 __all__ = [
     "Embedder", "cosine", "analyze", "SYNONYM_GROUPS",
@@ -11,4 +13,5 @@ __all__ = [
     "VectorStore", "ScoredChunk",
     "Reranker", "RerankedChunk",
     "explain", "SearchEngine",
+    "explain_counterfactual", "explain_ranking", "Counterfactual", "_query_terms",
 ]

@@ -41,6 +41,11 @@ class SearchEngine:
         reranked = self.reranker.rerank(query, candidates)
         return [explain(query, r) for r in reranked[:top_k]]
 
+    def reranked(self, query: str, top_n: int = 10, top_k: int = 5):
+        """リランク済みチャンク(RerankedChunk)を返す(反実仮想説明などの入力用)."""
+        candidates = self.store.search(query, top_n=top_n)
+        return self.reranker.rerank(query, candidates)[:top_k]
+
     def ranked_doc_ids(self, query: str, top_n: int = 10, top_k: int = 5,
                        rerank: bool = True, doc_type: str = None) -> List[str]:
         results = self.search(query, top_n=top_n, top_k=top_k, rerank=rerank, doc_type=doc_type)
