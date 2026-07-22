@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>文脈類似検索(スタンドアロン)</title>
+  <title>文脈類似検索</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
@@ -26,7 +26,8 @@
     }
 </style>
 </head>
-<body><div id="root"></div>
+<body><div style="max-width:880px;margin:0 auto 4px;background:#fff8e1;border:1px solid #f0d98a;border-radius:10px;padding:8px 14px;font:13px system-ui;color:#7a5b00">🔬 <b>デモ版</b>：数値は<b>サンプル（実測・実データではありません）</b>。ロジックの見せ方を確認するためのプロトタイプです。</div>
+<div id="root"></div>
 <script type="text/plain" id="__jsx">
   const RESULTS=[{doc_id:"saas",rerank_score:0.31,reasons:["同義概念で一致(キャンセル→解約)"],snippet:"…30日前の通知で解約…"},
     {doc_id:"gyoumu",rerank_score:0.28,reasons:["同義概念で一致(中途解約)"],snippet:"…1ヶ月前の予告で中途解約…"}];
