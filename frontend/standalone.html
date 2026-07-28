@@ -2,50 +2,222 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>文脈類似検索</title>
+  <title>文脈類似検索（実検索エンジン）</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"></script>
   <style>
     body{font-family:system-ui,sans-serif;background:#f7f8fa;margin:0;padding:24px;color:#1a1a2e}
-    .wrap{max-width:760px;margin:0 auto} h1{color:#5a3fb8;font-size:22px}
+    .wrap{max-width:900px;margin:0 auto} h1{color:#5a3fb8;font-size:22px}
+    h2{font-size:16px;margin:2px 0 8px} h3{font-size:14px;margin:10px 0 4px} .sub{color:#8a8f9c;font-size:12px}
     .card{background:#fff;border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-    table{border-collapse:collapse;width:100%} th,td{border:1px solid #dde;padding:6px 8px} th{background:#efeafb}
-    .reasons{color:#5a3fb8;font-size:13px} .snippet{color:#667;font-size:13px}
-    nav button{margin-right:8px} li{margin:8px 0}
-  
-    /* --- レスポンシブ強化(スマホ最適化) --- */
-    *{box-sizing:border-box} img,pre,table{max-width:100%}
-    .metrics{flex-wrap:wrap}
-    @media (max-width:640px){
-      body{padding:14px} .wrap{max-width:100%}
-      h1{font-size:19px} nav button{margin-bottom:6px}
-      .metrics{flex-direction:column;gap:8px} .metric{width:100%}
-      table{display:block;overflow-x:auto;white-space:nowrap;font-size:13px}
-      pre{overflow-x:auto} input,textarea,select{max-width:100%;width:100%}
-    }
-</style>
+    .real{background:#efeafb;border:1px solid #d6ccf2;border-radius:10px;padding:8px 12px;font-size:13px;color:#5a3fb8;margin-bottom:8px}
+    input.q{width:100%;border:1px solid #d5cdea;border-radius:8px;padding:10px;font-size:15px}
+    textarea{width:100%;border:1px solid #d5cdea;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;min-height:90px}
+    button{border:0;border-radius:8px;cursor:pointer;font-size:14px;padding:9px 16px}
+    button.primary{background:#5a3fb8;color:#fff;margin-top:8px} button.ghost{background:#efeafb;color:#5a3fb8;margin-left:6px;font-size:13px;padding:7px 12px}
+    .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+    .chip{border:1px solid #d6ccf2;background:#fff;color:#5a3fb8;border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12.5px}
+    table{border-collapse:collapse;width:100%;font-size:12.5px} th,td{border:1px solid #e6e2ee;padding:6px;text-align:center} th{background:#efeafb}
+    td.l,th.l{text-align:left}
+    .hit{border:1px solid #e6e2ee;border-radius:10px;padding:12px;margin:8px 0}
+    .hit .ttl{font-weight:bold;font-size:14px} .hit .snip{color:#556;font-size:13px;margin:5px 0;line-height:1.6}
+    .hit mark{background:#fff2a8;padding:0 2px}
+    .reasons{color:#0f7a54;font-size:12px} .rank{display:inline-block;width:24px;height:24px;line-height:24px;border-radius:50%;background:#5a3fb8;color:#fff;text-align:center;font-size:12px;margin-right:6px}
+    .moved{font-size:11px;font-weight:bold;margin-left:6px} .up{color:#0f7a54} .down{color:#c0392b}
+    .barrow{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12px}
+    .barrow .name{width:70px;flex-shrink:0} .track{flex:1;background:#f0edf7;border-radius:6px;height:12px;overflow:hidden} .fill{height:12px;border-radius:6px;background:#5a3fb8}
+    .ai{background:linear-gradient(135deg,#efeafb,#eafaf3);border-left:4px solid #5a3fb8;border-radius:10px;padding:14px;font-size:14px;line-height:1.7}
+    .plan{background:#faf8ff;border:1px solid #e6dff7;border-radius:10px;padding:12px;margin-top:8px}
+    .plan li{margin:7px 0;line-height:1.6;font-size:13px} .tierlabel{font-weight:bold;color:#5a3fb8;margin-top:4px}
+    .zero{background:#fdeeee;border:1px solid #f0caca;border-radius:10px;padding:12px;font-size:13px;color:#c0392b}
+    .note{color:#8a8f9c;font-size:12px}
+    @media(max-width:640px){body{padding:14px} .wrap{max-width:100%} h1{font-size:19px}
+      table{display:block;overflow-x:auto;white-space:nowrap;font-size:12px}}
+  </style>
 </head>
-<body><div style="max-width:880px;margin:0 auto 4px;background:#fff8e1;border:1px solid #f0d98a;border-radius:10px;padding:8px 14px;font:13px system-ui;color:#7a5b00">🔬 <b>デモ版</b>：数値は<b>サンプル（実測・実データではありません）</b>。ロジックの見せ方を確認するためのプロトタイプです。</div>
+<body><div style="max-width:880px;margin:0 auto 4px;background:#fff8e1;border:1px solid #f0d98a;border-radius:10px;padding:8px 14px;font:13px system-ui;color:#7a5b00">🔬 <b>実検索版</b>：入力した質問に対し、<b>ブラウザ内で実際に検索（BM25風スコア＋同義語展開＋再ランキング）</b>を実行します。文書は編集可能で、追加すればその場で検索対象になります。</div>
 <div id="root"></div>
 <script type="text/plain" id="__jsx">
-  const RESULTS=[{doc_id:"saas",rerank_score:0.31,reasons:["同義概念で一致(キャンセル→解約)"],snippet:"…30日前の通知で解約…"},
-    {doc_id:"gyoumu",rerank_score:0.28,reasons:["同義概念で一致(中途解約)"],snippet:"…1ヶ月前の予告で中途解約…"}];
-  const EVAL={vector_only:{"recall@3":1.0,"precision@3":0.47,MRR:0.9,"nDCG@3":0.939},
-    with_rerank:{"recall@3":1.0,"precision@3":0.53,MRR:1.0,"nDCG@3":0.984}};
-  function App(){
-    const [tab,setTab]=React.useState("search");
-    return (<div className="wrap"><h1>文脈類似ドキュメント検索 <small style={{fontSize:12,color:"#889"}}>(デモ)</small></h1>
-      <nav><button onClick={()=>setTab("search")} disabled={tab==="search"}>検索</button>
-        <button onClick={()=>setTab("eval")} disabled={tab==="eval"}>精度評価</button></nav>
-      {tab==="search"?(<div className="card"><h2>文脈類似検索</h2>
-        <input style={{width:"100%"}} defaultValue="契約をキャンセルしたい"/>
-        <ul>{RESULTS.map((r,i)=>(<li key={i}><b>{r.doc_id}</b>（score {r.rerank_score}）
-          <div className="reasons">{r.reasons.join(" / ")}</div><div className="snippet">{r.snippet}</div></li>))}</ul>
-      </div>):(<div className="card"><h2>精度評価(vector-only vs +rerank)</h2>
-        <table><tr><th>パイプライン</th><th>recall@3</th><th>precision@3</th><th>MRR</th><th>nDCG@3</th></tr>
-          {Object.entries(EVAL).map(([n,m])=>(<tr key={n}><td>{n}</td><td>{m["recall@3"]}</td>
-            <td>{m["precision@3"]}</td><td>{m.MRR}</td><td>{m["nDCG@3"]}</td></tr>))}</table></div>)}</div>);
-  }
-  ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script><script>(function(){var src=document.getElementById("__jsx").textContent;var out=Babel.transform(src,{presets:[["react",{runtime:"classic"}]]}).code;(0,eval)(out);})();</script></body></html>
+const DOCS0=`### 契約書（SaaS利用規約）
+本サービスの解約は、解約希望日の30日前までに書面またはメールで通知するものとする。解約時の返金は行わない。
+### 業務委託契約書
+本契約の中途解約は、1ヶ月前の予告をもって可能とする。予告なき中途解約の場合は違約金が発生する。
+### 就業規則（休職）
+私傷病により継続して30日以上勤務できない場合、休職を命ずることがある。休職期間は最大6ヶ月とする。
+### 個人情報取扱規程
+個人データの第三者提供は原則禁止。委託先への提供は契約締結と監督を条件に認める。秘密情報の漏洩時は直ちに報告する。
+### 発注・支払規程
+請求書は月末締め翌月末払い。支払遅延の場合は年14.6%の遅延損害金を申し受ける。
+### 秘密保持契約(NDA)
+開示された秘密情報は契約終了後3年間、第三者へ開示してはならない。`;
+
+const SYN={"キャンセル":["解約","中途解約","解除"],"解約":["キャンセル","中途解約","解除"],
+  "やめたい":["解約","中途解約","退会"],"退会":["解約"],"辞める":["解約","退職"],
+  "支払い":["支払","請求","入金"],"遅れ":["遅延","延滞","遅滞"],"遅延":["遅れ","延滞"],
+  "漏洩":["秘密情報","個人情報","開示"],"休み":["休職","休暇"],"病気":["私傷病","傷病"],
+  "違約金":["損害金"],"期限":["締切","期日","予告"]};
+// 助詞・機能語（これらを含む2-gramはノイズなので除外する）
+const PARTICLE=["の","を","に","は","が","で","と","も","へ","や","か","ば","ね","よ","し","て","た","な","だ","ど","ら","れ","る","い","う","ん","ま","す"];
+const STOPGRAM=["です","ます","たい","する","した","こと","ため","場合","どう","なる","たら","ある","いる","これ","それ"];
+function isNoise(g){
+  if(STOPGRAM.includes(g))return true;
+  // 2文字とも「ひらがなの機能語」なら意味を持たないノイズと判定
+  const a=g[0],b=g[1];
+  const hira=c=>/[ぁ-ん]/.test(c);
+  if(hira(a)&&hira(b)&&(PARTICLE.includes(a)||PARTICLE.includes(b)))return true;
+  return false;
+}
+function tokenize(s){
+  const t=[];
+  const jp=(s||"").replace(/[^぀-ヿ一-龯ａ-ｚA-Za-z0-9]/g,"");
+  for(let i=0;i<jp.length-1;i++){const g=jp.substr(i,2); if(!isNoise(g))t.push(g);}
+  return t;
+}
+function parseDocs(text){
+  const parts=text.split(/^###\s*/m).map(s=>s.trim()).filter(Boolean);
+  return parts.map((p,i)=>{const nl=p.indexOf("\n");
+    const title=nl>0?p.slice(0,nl).trim():p.slice(0,20);
+    const body=nl>0?p.slice(nl+1).trim():"";
+    return {id:"D"+(i+1), title, body, text:title+" "+body};});
+}
+function expandTerms(q){
+  const out=[];
+  Object.keys(SYN).forEach(k=>{ if(q.includes(k)) SYN[k].forEach(s=>out.push(s)); });
+  return out;
+}
+function lexScore(doc,qTokens,docs,cache){
+  const dt=cache.get(doc.id);
+  const len=dt.length||1;
+  let avg=0; docs.forEach(d=>{avg+=cache.get(d.id).length;}); avg=avg/(docs.length||1)||1;
+  const k1=1.5,b=0.75; let s=0;
+  [...new Set(qTokens)].forEach(t=>{
+    const tf=dt.filter(x=>x===t).length; if(!tf)return;
+    const df=docs.filter(d=>cache.get(d.id).includes(t)).length||1;
+    const idf=Math.log(1+(docs.length-df+0.5)/(df+0.5));
+    s+=idf*(tf*(k1+1))/(tf+k1*(1-b+b*len/avg));
+  });
+  return s;
+}
+function search(query,docs){
+  const cache=new Map(); docs.forEach(d=>cache.set(d.id,tokenize(d.text)));
+  const baseTokens=tokenize(query);
+  const synWords=expandTerms(query);
+  const allTokens=[...baseTokens,...synWords.flatMap(w=>tokenize(w))];
+  return docs.map(d=>{
+    const vec=lexScore(d,baseTokens,docs,cache);
+    const rer=lexScore(d,allTokens,docs,cache);
+    const reasons=[];
+    Object.keys(SYN).forEach(k=>{
+      if(query.includes(k)) SYN[k].forEach(s=>{ if(d.text.includes(s)) reasons.push("同義概念で一致（"+k+"→"+s+"）"); });
+    });
+    [...new Set(baseTokens)].forEach(t=>{ if(d.text.includes(t) && reasons.length<3) reasons.push("語「"+t+"」が一致"); });
+    return {...d, vec:Math.round(vec*100)/100, rer:Math.round(rer*100)/100, reasons:[...new Set(reasons)].slice(0,3)};
+  });
+}
+function snippet(body,query){
+  const terms=[...new Set([...tokenize(query),...expandTerms(query)])].filter(t=>t.length>=2);
+  let idx=-1;
+  for(const t of terms){ const i=body.indexOf(t); if(i>=0){idx=i;break;} }
+  const start=idx<0?0:Math.max(0,idx-40), end=Math.min(body.length,(idx<0?120:idx+110));
+  return {text:body.slice(start,end), pre:start>0, post:end<body.length, terms};
+}
+function Highlight({text,terms}){
+  const ts=terms.filter(t=>t.length>=2);
+  if(!ts.length)return <span>{text}</span>;
+  const re=new RegExp("("+ts.map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")","g");
+  const parts=text.split(re);
+  return <span>{parts.map((p,i)=>ts.includes(p)?<mark key={i}>{p}</mark>:<span key={i}>{p}</span>)}</span>;
+}
+
+function App(){
+  const [raw,setRaw]=React.useState(DOCS0);
+  const [q,setQ]=React.useState("契約をキャンセルしたい");
+  const [showDocs,setShowDocs]=React.useState(false);
+  const docs=parseDocs(raw);
+  const scored=search(q,docs);
+  const byVec=[...scored].sort((a,b)=>b.vec-a.vec);
+  const byRer=[...scored].sort((a,b)=>b.rer-a.rer);
+  // 最低適合度の閾値: 最高スコアの25%未満、かつ絶対値2.0未満は「無関係なノイズ」として除外
+  const top=Math.max(0,...byRer.map(d=>d.rer));
+  const MIN=2.0;
+  const hits=byRer.filter(d=>d.rer>=MIN && d.rer>=top*0.25);
+  const maxRer=Math.max(0.01,...byRer.map(d=>d.rer));
+  const moved=byRer.map((d,i)=>({id:d.id,to:i,from:byVec.findIndex(x=>x.id===d.id)}));
+  const promoted=moved.filter(m=>m.from>m.to);
+  const EX=["契約をキャンセルしたい","支払いが遅れたらどうなる","病気で長く休みたい","情報の漏洩が心配","違約金の期限"];
+
+  return (<div className="wrap">
+    <h1>文脈類似ドキュメント検索 <span className="sub">言い換えても意味で見つける（根拠つき）</span></h1>
+
+    <div className="card">
+      <div className="real">🔍 <b>質問を自由に入力</b>してください。単語が一致しなくても同義概念（例：キャンセル→解約）に展開して検索し、<b>なぜヒットしたかの根拠</b>を表示します。</div>
+      <input className="q" value={q} onChange={e=>setQ(e.target.value)} placeholder="例: 契約をキャンセルしたい"/>
+      <div className="chips">{EX.map((x,i)=>(<span className="chip" key={i} onClick={()=>setQ(x)}>{x}</span>))}</div>
+      <button className="ghost" onClick={()=>setShowDocs(s=>!s)}>{showDocs?"文書を隠す":"検索対象の文書を編集（現在"+docs.length+"件）"}</button>
+      {showDocs && <div style={{marginTop:8}}>
+        <div className="sub">「### タイトル」で区切って自由に文書を追加できます（追加すると即検索対象）。</div>
+        <textarea value={raw} onChange={e=>setRaw(e.target.value)}/>
+      </div>}
+    </div>
+
+    {hits.length===0
+      ? <div className="card"><div className="zero"><b>該当なし</b>：この質問に一致する文書がありません。存在しない回答を作らず「見つからない」と返します。文書を追加するか、言い換えてください。</div></div>
+      : <div className="card">
+          <h2>検索結果（再ランキング後・{hits.length}件）</h2>
+          {hits.map((d,i)=>{const sn=snippet(d.body,q);const mv=moved.find(m=>m.id===d.id);
+            return (<div className="hit" key={d.id}>
+              <div className="ttl"><span className="rank">{i+1}</span>{d.title}
+                {mv && mv.from>mv.to && <span className="moved up">▲ {mv.from+1}位→{mv.to+1}位に浮上</span>}
+                {mv && mv.from<mv.to && <span className="moved down">▼ {mv.from+1}位→{mv.to+1}位</span>}
+              </div>
+              <div className="snip">{sn.pre?"…":""}<Highlight text={sn.text} terms={sn.terms}/>{sn.post?"…":""}</div>
+              <div className="barrow"><span className="name">適合度</span>
+                <div className="track"><div className="fill" style={{width:(d.rer/maxRer*100)+"%"}}></div></div>
+                <span style={{width:44,textAlign:"right"}}>{d.rer}</span></div>
+              <div className="reasons">✓ {d.reasons.length?d.reasons.join(" ／ "):"語彙一致"}</div>
+            </div>);})}
+        </div>}
+
+    <div className="card">
+      <h2>再ランキングの効果（同義語展開あり / なし）</h2>
+      <p className="sub">「なし」＝入力語そのままで検索。「あり」＝同義概念に展開して検索。順位がどう変わったかを実測比較します。</p>
+      <table><thead><tr><th className="l">文書</th><th>展開なし</th><th>順位</th><th>展開あり</th><th>順位</th><th>変化</th></tr></thead>
+        <tbody>{byRer.map((d,i)=>{const from=byVec.findIndex(x=>x.id===d.id);
+          return (<tr key={d.id}><td className="l">{d.title}</td><td>{d.vec}</td><td>{from+1}</td><td><b>{d.rer}</b></td><td><b>{i+1}</b></td>
+            <td className={from>i?"up":from<i?"down":""}>{from>i?"▲+"+(from-i):from<i?"▼"+(i-from):"—"}</td></tr>);})}
+        </tbody></table>
+    </div>
+
+    <div className="card">
+      <h2>🤖 分析と精度を上げるプラン</h2>
+      <div className="ai">
+        この質問では <b>{promoted.length}件</b>の文書が同義語展開によって順位を上げました。
+        {hits.length>0 && <span> 1位は「{hits[0].title}」（適合度{hits[0].rer}）。根拠は「{hits[0].reasons[0]||"語彙一致"}」です。</span>}
+        {hits.length>1 && (hits[0].rer-hits[1].rer)<0.3 && <span> ただし2位との差が小さく（{(hits[0].rer-hits[1].rer).toFixed(2)}）、判断が拮抗しています。</span>}
+      </div>
+      <div className="plan">
+        <div className="tierlabel">① まず改善する</div>
+        <ul>
+          {hits.length===0 && <li><b>ヒットゼロ</b>：この言い回しの同義語を辞書に追加する（現在{Object.keys(SYN).length}語）。</li>}
+          {hits.length>1 && (hits[0].rer-hits[1].rer)<0.3 && <li><b>順位が拮抗</b>：文書タイトルを具体化し、判別できる語を含める。</li>}
+          {docs.length<10 && <li><b>文書数が少ない</b>（{docs.length}件）：規程・FAQを追加登録すると精度が安定します。</li>}
+          {promoted.length===0 && hits.length>0 && <li><b>同義語展開が効いていない</b>：この質問に関係する言い換えを辞書へ追加。</li>}
+        </ul>
+      </div>
+      <div className="plan">
+        <div className="tierlabel">② さらに精度を上げる</div>
+        <ul>
+          <li>正解ラベル付きの質問集を用意し、<b>recall / precision / nDCG</b> で定点観測する。</li>
+          <li>本ツールは語彙ベース。実運用では<b>埋め込みベクトル＋この再ランキング</b>の2段構成が最も精度が出ます。</li>
+          <li>ヒットゼロの質問ログは<b>ナレッジ不足の可視化</b>＝追加すべき文書のリストになります。</li>
+        </ul>
+      </div>
+    </div>
+
+    <p className="note">※スコアはブラウザ内で計算したBM25風の語彙適合度（実計算）です。同義語辞書は{Object.keys(SYN).length}語の簡易版で、外部LLMや埋め込みベクトルは使用していません。実運用では埋め込みモデルを併用します。</p>
+  </div>);
+}
+</script>
+<script>(function(){var src=document.getElementById("__jsx").textContent;var out=Babel.transform(src,{presets:[["react",{runtime:"classic"}]]}).code;(0,eval)(out);ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));})();</script>
+</body></html>
