@@ -32,6 +32,12 @@
     .plan li{margin:7px 0;line-height:1.6;font-size:13px} .tierlabel{font-weight:bold;color:#5a3fb8;margin-top:4px}
     .zero{background:#fdeeee;border:1px solid #f0caca;border-radius:10px;padding:12px;font-size:13px;color:#c0392b}
     .note{color:#8a8f9c;font-size:12px}
+    .usecase{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .usecase>div{flex:1;min-width:230px;border-radius:10px;padding:12px;font-size:13px;line-height:1.7}
+    .prob{background:#fdeeee;border:1px solid #f0caca;color:#7a2020} .sol{background:#e7f7ef;border:1px solid #b6e3cc;color:#0f5c3f}
+    .who{margin:6px 0 0;padding-left:20px} .who li{margin:7px 0;font-size:13px;line-height:1.7}
+    .src{background:#f7f9fb;border:1px solid #e0e6ec;border-left:4px solid #8a8f9c;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#445;line-height:1.8;margin:8px 0}
+    .src b{color:#1a1a2e} .src div{margin:3px 0}
     @media(max-width:640px){body{padding:14px} .wrap{max-width:100%} h1{font-size:19px}
       table{display:block;overflow-x:auto;white-space:nowrap;font-size:12px}}
   </style>
@@ -148,10 +154,36 @@ function App(){
   const EX=["契約をキャンセルしたい","支払いが遅れたらどうなる","病気で長く休みたい","情報の漏洩が心配","違約金の期限"];
 
   return (<div className="wrap">
-    <h1>文脈類似ドキュメント検索 <span className="sub">言い換えても意味で見つける（根拠つき）</span></h1>
+    <h1>言い換え対応 社内文書検索 <span className="sub">「解約」と書かれた規程を「キャンセル」で探せるようにする</span></h1>
+
+    <div className="card" style={{background:"#fcfbff"}}>
+      <h2>何のための道具？（1分で分かる説明）</h2>
+      <div className="usecase">
+        <div className="prob"><b>❌ ふつうの検索で困ること</b><br/>
+          社内の規程には「<b>解約</b>」と書いてある。でも社員は「契約を<b>キャンセル</b>したい」と検索する。
+          → <b>文字が違うのでヒットしない</b>。「そんな規程は無い」と誤解され、結果として総務や上司に同じ質問が何度も来る。</div>
+        <div className="sol"><b>✅ このツールがすること</b><br/>
+          「キャンセル＝解約」のような<b>意味のつながり</b>を辞書に持ち、言い換えても正しい文書を見つけます。
+          さらに<b>なぜヒットしたか（根拠）</b>を表示するので、ユーザーが結果を信用できます。</div>
+      </div>
+      <h3>こんな人・場面で必要になります</h3>
+      <ul className="who">
+        <li><b>社内ヘルプデスク／総務・人事</b>：「規程に書いてあるのに見つけられない」という問い合わせが多い。検索の言い換え耐性を上げれば、問い合わせ自体が減ります。</li>
+        <li><b>カスタマーサポート</b>：お客様は正式名称で聞いてくれません（「返品」を「返したい」）。オペレーターが該当規約をすぐ引ける必要があります。</li>
+        <li><b>社内AIチャットを作る人（RAG開発者）</b>：AIチャットの回答精度は<b>ほぼ検索精度で決まります</b>。検索で正しい文書を拾えないと、AIは平気で間違った回答を作ります。ここは<b>AI回答の前段にある一番重要な部品</b>です。</li>
+        <li><b>法務・契約管理</b>：契約書の山から「この論点はどの条項か」を探す。用語が契約ごとに違うため、言い換え対応が効きます。</li>
+      </ul>
+      <div className="sub" style={{marginTop:8}}>💡 <b>試し方</b>：下の入力欄に「契約をキャンセルしたい」と入れてください。文書には「キャンセル」の語は<b>1つもありません</b>が、「解約」の条項が正しく1位で出ます。それが<b>この道具の価値</b>です。</div>
+    </div>
 
     <div className="card">
       <div className="real">🔍 <b>質問を自由に入力</b>してください。単語が一致しなくても同義概念（例：キャンセル→解約）に展開して検索し、<b>なぜヒットしたかの根拠</b>を表示します。</div>
+      <div className="src">
+        <b>📋 このデータの出所（正直に）</b>
+        <div>・検索対象の{docs.length}件は<b>デモ用に作成した架空の社内規程</b>です（「検索対象の文書を編集」で全文を確認・差し替えできます）。</div>
+        <div>・<b>スコアは実計算</b>です。ブラウザ内でBM25（検索の標準的な統計手法）を実行しており、順位をあらかじめ書いてはいません。</div>
+        <div>・同義語辞書（{Object.keys(SYN).length}語）は<b>手作りの簡易版</b>です。実運用では自社の用語集や埋め込みベクトルを使います。</div>
+      </div>
       <input className="q" value={q} onChange={e=>setQ(e.target.value)} placeholder="例: 契約をキャンセルしたい"/>
       <div className="chips">{EX.map((x,i)=>(<span className="chip" key={i} onClick={()=>setQ(x)}>{x}</span>))}</div>
       <button className="ghost" onClick={()=>setShowDocs(s=>!s)}>{showDocs?"文書を隠す":"検索対象の文書を編集（現在"+docs.length+"件）"}</button>
